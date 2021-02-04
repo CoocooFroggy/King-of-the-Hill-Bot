@@ -51,9 +51,9 @@ public class Main extends ListenerAdapter {
         }
     }
 
-    // Command executor
     @Override
     public void onGuildMessageReceived(@NotNull GuildMessageReceivedEvent event) {
+        //Vars
         Message message = event.getMessage();
         String messageRaw = message.getContentRaw();
         User user = event.getAuthor();
@@ -67,6 +67,7 @@ public class Main extends ListenerAdapter {
 
         String messageNoPrefix = messageRaw.substring(prefix.length());
 
+        // Command executor
         switch (messageNoPrefix.split("\\s")[0]) {
             case "p":
             case "push": {
