@@ -40,6 +40,9 @@ public class Commands {
                     "SET userid = '" + userId + "' " +
                     "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
+            //Create roles if they don't exist
+            createRoles(guild);
+
             //Distribute roles
             distributeRoles(null, member, guild);
 
@@ -112,22 +115,7 @@ public class Commands {
             return;
         }
 
-        //Check if roles already exist
-        List<Role> kothRole = guild.getRolesByName("King of the Hill!", false);
-        List<Role> pushedRole = guild.getRolesByName("Pushed off the Hill", false);
-        //Make it if it doesn't
-        if (kothRole.isEmpty()) {
-            guild.createRole()
-                    .setName("King of the Hill!")
-                    .setPermissions()
-                    .queue();
-        }
-        if (pushedRole.isEmpty()) {
-            guild.createRole()
-                    .setName("Pushed off the Hill")
-                    .setPermissions()
-                    .queue();
-        }
+        createRoles(guild);
 
         //Otherwise create a hill here
         statement.execute("INSERT INTO king (guildid, channelid) VALUES " +
@@ -173,5 +161,24 @@ public class Commands {
         guild.removeRoleFromMember(kingMember, kothRole).queue();
         //Give pushed off role to king
         guild.addRoleToMember(kingMember, pushedRole).queue();
+    }
+
+    public static void createRoles(Guild guild) {
+        //Check if roles already exist
+        List<Role> kothRole = guild.getRolesByName("King of the Hill!", false);
+        List<Role> pushedRole = guild.getRolesByName("Pushed off the Hill", false);
+        //Make it if it doesn't
+        if (kothRole.isEmpty()) {
+            guild.createRole()
+                    .setName("King of the Hill!")
+                    .setPermissions()
+                    .queue();
+        }
+        if (pushedRole.isEmpty()) {
+            guild.createRole()
+                    .setName("Pushed off the Hill")
+                    .setPermissions()
+                    .queue();
+        }
     }
 }
