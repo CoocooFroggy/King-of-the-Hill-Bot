@@ -87,6 +87,14 @@ public class Main extends ListenerAdapter {
                     throwables.printStackTrace();
                 }
                 break;
+            case "r":
+            case "remove":
+                try {
+                    Commands.removeCommand(guild, member, channel);
+                } catch (SQLException throwables) {
+                    channel.sendMessage("Database error :(").queue();
+                    throwables.printStackTrace();
+                }
         }
     }
 }

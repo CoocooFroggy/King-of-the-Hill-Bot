@@ -101,12 +101,12 @@ public class Commands {
         if (!member.hasPermission(Permission.MANAGE_SERVER))
             return;
 
-        //Get user ID of king
+        //See if hill exists here
         ResultSet resultSet = statement.executeQuery(
                 "SELECT * FROM king " +
                         "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
-        //Check if king already exists here
+        //Check if hill already exists here
         if (resultSet.next()) {
             channel.sendMessage("Cannot create a hill here, hill already exists!").queue();
             return;
@@ -133,6 +133,22 @@ public class Commands {
         statement.execute("INSERT INTO king (guildid, channelid) VALUES " +
                 "('" + guildId + "', '" + channelId + "')");
         channel.sendMessage("Hill created! Do `-push` to start!").queue();
+    }
+
+    public static void removeCommand(Guild guild, Member member, TextChannel channel) throws SQLException {
+        //DELETE FROM king WHERE channelid = '685618172975513625';
+        //Vars
+        Statement statement = Main.statement;
+        String guildId = guild.getId();
+        String channelId = channel.getId();
+
+        //If they don't have manage server perms, ignore them
+        if (!member.hasPermission(Permission.MANAGE_SERVER))
+            return;
+
+        statement.execute("DELETE FROM king WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
+
+        channel.sendMessage("Removed hill from this channel.").queue();
     }
 
     /*
