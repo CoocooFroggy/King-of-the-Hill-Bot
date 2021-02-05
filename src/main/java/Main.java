@@ -67,8 +67,10 @@ public class Main extends ListenerAdapter {
 
         String messageNoPrefix = messageRaw.substring(prefix.length());
 
+        String command = messageNoPrefix.split("\\s")[0].toLowerCase();
+
         // Command executor
-        switch (messageNoPrefix.split("\\s")[0]) {
+        switch (command) {
             case "p":
             case "push": {
                 try {

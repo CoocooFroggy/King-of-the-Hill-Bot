@@ -57,7 +57,6 @@ public class Commands {
         }
 
 
-
         //King vars P2
         String pushedUserId = mentionedUsers.get(0).getId();
         User kingUser = Main.jda.retrieveUserById(kingId).complete();
@@ -78,6 +77,12 @@ public class Commands {
 
         //Otherwise check if they pushed the king off
         if (pushedUserId.equals(kingId)) {
+            //Create roles if they don't exist
+            createRoles(guild);
+
+            //Distribute roles
+            distributeRoles(kingMember, member, guild, channel);
+
             //Push off the king
             statement.executeUpdate("UPDATE king " +
                     "SET userid = '" + kingId + "' " +
@@ -88,11 +93,6 @@ public class Commands {
                     "SET userid = '" + userId + "' " +
                     "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
-            //Create roles if they don't exist
-            createRoles(guild);
-
-            //Distribute roles
-            distributeRoles(kingMember, member, guild, channel);
 
             channel.sendMessage("**" + nickname + "** pushed **" + kingNickname + "** off the hill!").queue();
             return;
@@ -151,8 +151,8 @@ public class Commands {
     }
 
     /*
-    *** UTILITIES ***
-    */
+     *** UTILITIES ***
+     */
     public static void distributeRoles(Member kingMember, Member member, Guild guild, TextChannel channel) throws SQLException {
         Statement statement = Main.statement;
         String guildId = guild.getId();
@@ -168,10 +168,15 @@ public class Commands {
                 "SELECT userid FROM king " +
                         "WHERE key = 'pushed' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
+        //Remove pushed role from pushed off the hill person
         if (resultSet.next()) {
-            Member pushedOffMember = guild.retrieveMemberById((String) resultSet.getObject(resultSet.findColumn("userid"))).complete();
-            //Remove pushed off role from pushed off person
-            guild.removeRoleFromMember(pushedOffMember, pushedRole).queue();
+            String pushedId = (String) resultSet.getObject(resultSet.findColumn("userid"));
+            if (pushedId != null) {
+                Member pushedOffMember = guild.retrieveMemberById(pushedId).complete();
+                //Remove pushed off role from pushed off person
+                System.out.println("Removing " + pushedRole + " from " + pushedOffMember);
+                guild.removeRoleFromMember(pushedOffMember, pushedRole).queue();
+            }
         }
 
         //Give king role to pusher
@@ -180,11 +185,11 @@ public class Commands {
         //In case we don't need to interact with king, return
         if (kingMember == null)
             return;
-        
-        //Remove king role from king
-        guild.removeRoleFromMember(kingMember, kothRole).queue();
+
         //Give pushed off role to king
         guild.addRoleToMember(kingMember, pushedRole).queue();
+        //Remove king role from king
+        guild.removeRoleFromMember(kingMember, kothRole).queue();
     }
 
     public static void createRoles(Guild guild) {
