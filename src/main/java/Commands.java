@@ -24,7 +24,7 @@ public class Commands {
         //Get user ID of king
         ResultSet resultSet = statement.executeQuery(
                 "SELECT userid FROM king " +
-                        "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
+                        "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
         //If there's no hill in this channel + guild
         if (!resultSet.next())
@@ -38,13 +38,13 @@ public class Commands {
         if (kingId == null) {
             statement.execute("UPDATE king " +
                     "SET userid = '" + userId + "' " +
-                    "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
+                    "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
             //Create roles if they don't exist
             createRoles(guild);
 
             //Distribute roles
-            distributeRoles(null, member, guild);
+            distributeRoles(null, member, guild, channel);
 
             channel.sendMessage("**" + nickname + "** is now king of the hill!").queue();
             return;
@@ -78,12 +78,21 @@ public class Commands {
 
         //Otherwise check if they pushed the king off
         if (pushedUserId.equals(kingId)) {
+            //Push off the king
+            statement.executeUpdate("UPDATE king " +
+                    "SET userid = '" + kingId + "' " +
+                    "WHERE key = 'pushed' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
+
+            //Make the pusher the new king
             statement.executeUpdate("UPDATE king " +
                     "SET userid = '" + userId + "' " +
-                    "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
+                    "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
+
+            //Create roles if they don't exist
+            createRoles(guild);
 
             //Distribute roles
-            distributeRoles(kingMember, member, guild);
+            distributeRoles(kingMember, member, guild, channel);
 
             channel.sendMessage("**" + nickname + "** pushed **" + kingNickname + "** off the hill!").queue();
             return;
@@ -107,7 +116,7 @@ public class Commands {
         //See if hill exists here
         ResultSet resultSet = statement.executeQuery(
                 "SELECT * FROM king " +
-                        "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
+                        "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
         //Check if hill already exists here
         if (resultSet.next()) {
@@ -118,8 +127,10 @@ public class Commands {
         createRoles(guild);
 
         //Otherwise create a hill here
-        statement.execute("INSERT INTO king (guildid, channelid) VALUES " +
-                "('" + guildId + "', '" + channelId + "')");
+        statement.execute("INSERT INTO king (key, guildid, channelid) VALUES " +
+                "('king', '" + guildId + "', '" + channelId + "')");
+        statement.execute("INSERT INTO king (key, guildid, channelid) VALUES " +
+                "('pushed', '" + guildId + "', '" + channelId + "')");
         channel.sendMessage("Hill created! Do `-push` to start!").queue();
     }
 
@@ -142,14 +153,27 @@ public class Commands {
     /*
     *** UTILITIES ***
     */
-    public static void distributeRoles(Member kingMember, Member member, Guild guild) {
+    public static void distributeRoles(Member kingMember, Member member, Guild guild, TextChannel channel) throws SQLException {
+        Statement statement = Main.statement;
+        String guildId = guild.getId();
+        String channelId = channel.getId();
+
         List<Role> kothRoles = guild.getRolesByName("King of the Hill!", false);
         Role kothRole = kothRoles.get(0);
         List<Role> pushedRoles = guild.getRolesByName("Pushed off the Hill", false);
         Role pushedRole = pushedRoles.get(0);
 
-        //Remove pushed off role from pusher
-        guild.removeRoleFromMember(member, pushedRole).queue();
+        //Get user ID of pushed off
+        ResultSet resultSet = statement.executeQuery(
+                "SELECT userid FROM king " +
+                        "WHERE key = 'pushed' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
+
+        if (resultSet.next()) {
+            Member pushedOffMember = guild.retrieveMemberById((String) resultSet.getObject(resultSet.findColumn("userid"))).complete();
+            //Remove pushed off role from pushed off person
+            guild.removeRoleFromMember(pushedOffMember, pushedRole).queue();
+        }
+
         //Give king role to pusher
         guild.addRoleToMember(member, kothRole).queue();
 
