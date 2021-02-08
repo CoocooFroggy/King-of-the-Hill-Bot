@@ -65,6 +65,11 @@ public class Main extends ListenerAdapter {
         if (!messageRaw.startsWith(prefix))
             return;
 
+        if (member == null) {
+            System.out.println("Member " + user.getName() + " has null member");
+            return;
+        }
+
         String messageNoPrefix = messageRaw.substring(prefix.length());
 
         String command = messageNoPrefix.split("\\s")[0].toLowerCase();
@@ -91,6 +96,7 @@ public class Main extends ListenerAdapter {
                 }
                 break;
             case "r":
+            case "reset":
             case "remove":
                 try {
                     Commands.removeCommand(guild, member, channel);
