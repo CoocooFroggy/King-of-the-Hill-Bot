@@ -95,7 +95,6 @@ public class Commands {
 
 
             channel.sendMessage("**" + nickname + "** pushed **" + kingNickname + "** off the hill!").queue();
-            return;
         }
         //Else if they didn't push the king off the hill
         else {
@@ -174,7 +173,6 @@ public class Commands {
             if (pushedId != null) {
                 Member pushedOffMember = guild.retrieveMemberById(pushedId).complete();
                 //Remove pushed off role from pushed off person
-                System.out.println("Removing " + pushedRole + " from " + pushedOffMember);
                 guild.removeRoleFromMember(pushedOffMember, pushedRole).queue();
             }
         }
