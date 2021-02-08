@@ -54,9 +54,15 @@ public class Main extends ListenerAdapter {
     @Override
     public void onGuildMessageReceived(@NotNull GuildMessageReceivedEvent event) {
         //Vars
+        User user = event.getAuthor();
+
+        //Ignore bots
+        if (user.isBot())
+            return;
+
+        //Vars ctd.
         Message message = event.getMessage();
         String messageRaw = message.getContentRaw();
-        User user = event.getAuthor();
         Member member = event.getMember();
         Guild guild = event.getGuild();
         TextChannel channel = event.getChannel();
