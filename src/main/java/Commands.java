@@ -4,7 +4,12 @@ import net.dv8tion.jda.api.entities.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.DateFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class Commands {
     public static void pushCommand(User user, Member member, Guild guild, TextChannel channel, List<User> mentionedUsers) throws SQLException {
@@ -23,7 +28,7 @@ public class Commands {
 
         //Get user ID of king
         ResultSet resultSet = statement.executeQuery(
-                "SELECT userid FROM king " +
+                "SELECT userid, timestamp FROM king " +
                         "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
         //If there's no hill in this channel + guild
@@ -32,12 +37,16 @@ public class Commands {
 
         //King vars part 1
         int kingidIndex = resultSet.findColumn("userid");
-        String kingId = (String) resultSet.getObject(kingidIndex);
+        int kingTimestampIndex = resultSet.findColumn("timestamp");
+        String kingId = resultSet.getString(kingidIndex);
+        String kingTimestamp = resultSet.getString(kingTimestampIndex);
+        Instant currentTimestamp = Instant.now();
+        long currentTimestampEpoch = Instant.now().toEpochMilli();
 
         //If there already is row for this guild and channel, just no king
         if (kingId == null) {
             statement.execute("UPDATE king " +
-                    "SET userid = '" + userId + "' " +
+                    "SET userid = '" + userId + "', timestamp = '" + currentTimestampEpoch + "' " +
                     "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
             //Create roles if they don't exist
@@ -61,6 +70,7 @@ public class Commands {
         String pushedUserId = mentionedUsers.get(0).getId();
         User kingUser = Main.jda.retrieveUserById(kingId).complete();
         Member kingMember = guild.retrieveMember(kingUser).complete();
+        Instant kingStartDate = Instant.ofEpochMilli(Long.parseLong(kingTimestamp));
         String kingNickname;
 
         //If you mention yourself
@@ -83,6 +93,33 @@ public class Commands {
             //Distribute roles
             distributeRoles(kingMember, member, guild, channel);
 
+            //Get king's totalseconds
+            ResultSet statsResultSet = statement.executeQuery("SELECT totalseconds FROM kingstats " +
+                    "WHERE userid = '" + kingId + "'");
+
+            //Time vars
+            long totalseconds = 0;
+
+            //If they already have stats, add time
+            if (statsResultSet.next()) {
+                int totalsecondsIndex = statsResultSet.findColumn("totalseconds");
+                String totalsecondsString = resultSet.getString(totalsecondsIndex);
+                totalseconds = Long.parseLong(totalsecondsString);
+            }
+
+            //Calculate how long they've been king
+            Duration between = Duration.between(kingStartDate, currentTimestamp);
+
+            //Add to totalseconds
+            totalseconds += between.getSeconds();
+
+            //Update table with new time
+            statement.execute("UPDATE kingstats SET totalseconds = '" + totalseconds + "' WHERE userid = '" + kingId + "'; " +
+                    "INSERT INTO kingstats (userid, totalseconds) " +
+                    "SELECT '" + kingId + "', '" + totalseconds + "' " +
+                    "WHERE NOT EXISTS (SELECT 1 FROM kingstats WHERE userid = '" + kingId + "');"
+            );
+
             //Push off the king
             statement.executeUpdate("UPDATE king " +
                     "SET userid = '" + kingId + "' " +
@@ -90,7 +127,7 @@ public class Commands {
 
             //Make the pusher the new king
             statement.executeUpdate("UPDATE king " +
-                    "SET userid = '" + userId + "' " +
+                    "SET userid = '" + userId + "', timestamp = '" + currentTimestampEpoch + "'" +
                     "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
 
@@ -147,6 +184,61 @@ public class Commands {
         statement.execute("DELETE FROM king WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
         channel.sendMessage("Removed hill from this channel.").queue();
+    }
+
+    public static void statsCommand(Guild guild, Member member, TextChannel channel) throws SQLException {
+        //Vars
+        Statement statement = Main.statement;
+        String userId = member.getId();
+        String guildId = guild.getId();
+        String channelId = channel.getId();
+        int totalSeconds = 0;
+
+        ResultSet kingstatsResultSet = statement.executeQuery("SELECT totalseconds FROM kingstats " +
+                "WHERE userid = '" + userId + "'");
+
+        //Get stored seconds
+        if (kingstatsResultSet.next()) {
+            int totalsecondsIndex = kingstatsResultSet.findColumn("totalseconds");
+            String totalsecondsString = kingstatsResultSet.getString(totalsecondsIndex);
+            totalSeconds = Integer.parseInt(totalsecondsString);
+        }
+
+        //Get king of the channel + timestamp
+        ResultSet kingResultSet = statement.executeQuery("SELECT userid, timestamp FROM king " +
+                "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
+
+        //If there's no hill in this channel
+        if (!kingResultSet.next())
+            return;
+
+        //Add current session's seconds if you're king
+        int kingIdIndex = kingResultSet.findColumn("userid");
+        String kingId = kingResultSet.getString(kingIdIndex);
+        if (userId.equals(kingId)) {
+            Instant currentInstant = Instant.now();
+            String kingStartEpoch = kingResultSet.getString("timestamp");
+            Instant kingStartInstant = Instant.ofEpochMilli(Long.parseLong(kingStartEpoch));
+
+            Duration between = Duration.between(kingStartInstant, currentInstant);
+
+            totalSeconds += between.getSeconds();
+        }
+
+        //If your time is 0
+        if (totalSeconds == 0) {
+            channel.sendMessage("You haven't been king yet.").queue();
+        }
+
+        String formattedTime = String.format("%d hours, %d minutes, %d seconds",
+                TimeUnit.SECONDS.toHours(totalSeconds),
+                TimeUnit.SECONDS.toMinutes(totalSeconds) -
+                        TimeUnit.HOURS.toMinutes(TimeUnit.SECONDS.toHours(totalSeconds)),
+                totalSeconds -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.SECONDS.toMinutes(totalSeconds))
+        );
+
+        channel.sendMessage("You've been king for **" + formattedTime + "**.").queue();
     }
 
     /*

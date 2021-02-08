@@ -104,6 +104,16 @@ public class Main extends ListenerAdapter {
                     channel.sendMessage("Database error :(").queue();
                     throwables.printStackTrace();
                 }
+                break;
+            case "s":
+            case "stats":
+                try {
+                    Commands.statsCommand(guild, member, channel);
+                } catch (SQLException throwables) {
+                    channel.sendMessage("Database error :(").queue();
+                    throwables.printStackTrace();
+                }
+                break;
         }
     }
 }
