@@ -112,6 +112,10 @@ public class Commands {
             //Add to totalseconds
             totalseconds += between.getSeconds();
 
+            //Only add 1/3 of GL's time ;)
+            if (member.getId().equals("364536918362554368"))
+                totalseconds /= 3;
+
             //Update table with new time
             statement.execute("UPDATE kingstats SET totalseconds = '" + totalseconds + "' WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "'; " +
                     "INSERT INTO kingstats (guildid, channelid, userid, totalseconds) " +
