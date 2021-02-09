@@ -114,7 +114,7 @@ public class Main extends ListenerAdapter {
             case "s":
             case "stats":
                 try {
-                    Commands.statsCommand(guild, member, channel);
+                    Commands.statsCommand(guild, member, channel, mentionedUsers);
                 } catch (SQLException throwables) {
                     channel.sendMessage("Database error :(").queue();
                     throwables.printStackTrace();

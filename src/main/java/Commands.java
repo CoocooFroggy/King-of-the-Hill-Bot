@@ -185,13 +185,28 @@ public class Commands {
         channel.sendMessage("Removed hill from this channel.").queue();
     }
 
-    public static void statsCommand(Guild guild, Member member, TextChannel channel) throws SQLException {
+    public static void statsCommand(Guild guild, Member member, TextChannel channel, List<User> mentionedUsers) throws SQLException {
         //Vars
         Statement statement = Main.statement;
         String userId = member.getId();
         String guildId = guild.getId();
         String channelId = channel.getId();
         int totalSeconds = 0;
+        String nickname;
+
+        //if they mentioned a user
+        if (!mentionedUsers.isEmpty()) {
+            //Then set the user ID to that mentioned user
+            userId = mentionedUsers.get(0).getId();
+        }
+        //Otherwise it'll be the user ID of the user who triggered the command
+
+
+        //Get personal name for user
+        if (member.getNickname() == null)
+            nickname = member.getUser().getName();
+        else
+            nickname = member.getNickname();
 
         ResultSet kingstatsResultSet = statement.executeQuery("SELECT totalseconds FROM kingstats " +
                 "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + userId + "'");
@@ -226,7 +241,7 @@ public class Commands {
 
         //If your time is 0
         if (totalSeconds == 0) {
-            channel.sendMessage("You haven't been king yet.").queue();
+            channel.sendMessage("**" + nickname + "** hasn't been king yet.").queue();
         }
 
         String formattedTime = String.format("%d hours, %d minutes, %d seconds",
@@ -237,7 +252,7 @@ public class Commands {
                         TimeUnit.MINUTES.toSeconds(TimeUnit.SECONDS.toMinutes(totalSeconds))
         );
 
-        channel.sendMessage("You've been king for **" + formattedTime + "**.").queue();
+        channel.sendMessage("**" + nickname + "** has been king for **" + formattedTime + "**.").queue();
     }
 
     /*
