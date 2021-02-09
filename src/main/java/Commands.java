@@ -95,15 +95,14 @@ public class Commands {
 
             //Get king's totalseconds
             ResultSet statsResultSet = statement.executeQuery("SELECT totalseconds FROM kingstats " +
-                    "WHERE userid = '" + kingId + "'");
+                    "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "'");
 
             //Time vars
             long totalseconds = 0;
 
             //If they already have stats, add time
             if (statsResultSet.next()) {
-                int totalsecondsIndex = statsResultSet.findColumn("totalseconds");
-                String totalsecondsString = resultSet.getString(totalsecondsIndex);
+                String totalsecondsString = statsResultSet.getString("totalseconds");
                 totalseconds = Long.parseLong(totalsecondsString);
             }
 
@@ -114,10 +113,10 @@ public class Commands {
             totalseconds += between.getSeconds();
 
             //Update table with new time
-            statement.execute("UPDATE kingstats SET totalseconds = '" + totalseconds + "' WHERE userid = '" + kingId + "'; " +
-                    "INSERT INTO kingstats (userid, totalseconds) " +
-                    "SELECT '" + kingId + "', '" + totalseconds + "' " +
-                    "WHERE NOT EXISTS (SELECT 1 FROM kingstats WHERE userid = '" + kingId + "');"
+            statement.execute("UPDATE kingstats SET totalseconds = '" + totalseconds + "' WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "'; " +
+                    "INSERT INTO kingstats (guildid, channelid, userid, totalseconds) " +
+                    "SELECT '" + guildId + "', '" + channelId + "', '" + kingId + "', '" + totalseconds + "' " +
+                    "WHERE NOT EXISTS (SELECT 1 FROM kingstats WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "');"
             );
 
             //Push off the king
@@ -195,7 +194,7 @@ public class Commands {
         int totalSeconds = 0;
 
         ResultSet kingstatsResultSet = statement.executeQuery("SELECT totalseconds FROM kingstats " +
-                "WHERE userid = '" + userId + "'");
+                "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + userId + "'");
 
         //Get stored seconds
         if (kingstatsResultSet.next()) {
