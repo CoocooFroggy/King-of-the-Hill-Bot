@@ -10,14 +10,16 @@ import java.util.List;
 import java.util.TimerTask;
 
 public class DistributeRolesTimer extends TimerTask {
-    Member kingMember;
     Member member;
+    Member kingMember;
+    String pushedId;
     Guild guild;
     TextChannel channel;
 
-    DistributeRolesTimer(Member kingMember, Member member, Guild guild, TextChannel channel) {
-        this.kingMember = kingMember;
+    DistributeRolesTimer(Member member, Member kingMember, String pushedId, Guild guild, TextChannel channel) {
         this.member = member;
+        this.kingMember = kingMember;
+        this.pushedId = pushedId;
         this.guild = guild;
         this.channel = channel;
     }
@@ -33,25 +35,13 @@ public class DistributeRolesTimer extends TimerTask {
         List<Role> pushedRoles = guild.getRolesByName("Pushed off the Hill", false);
         Role pushedRole = pushedRoles.get(0);
 
-        //Get user ID of pushed off
-        ResultSet resultSet = null;
-        try {
-            resultSet = statement.executeQuery(
-                    "SELECT userid FROM king " +
-                            "WHERE key = 'pushed' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
-
-            //Remove pushed role from pushed off the hill person
-            if (resultSet.next()) {
-                String pushedId = (String) resultSet.getObject(resultSet.findColumn("userid"));
-                if (pushedId != null) {
-                    Member pushedOffMember = guild.retrieveMemberById(pushedId).complete();
-                    //Remove pushed off role from pushed off person
-                    guild.removeRoleFromMember(pushedOffMember, pushedRole).queue();
-                }
-            }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        //Remove pushed role from pushed off the hill person
+        if (pushedId != null) {
+            Member pushedOffMember = guild.retrieveMemberById(pushedId).complete();
+            //Remove pushed off role from pushed off person
+            guild.removeRoleFromMember(pushedOffMember, pushedRole).queue();
         }
+
 
         //Give king role to pusher
         guild.addRoleToMember(member, kothRole).queue();

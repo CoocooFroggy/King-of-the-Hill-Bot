@@ -1,6 +1,7 @@
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 
+import javax.swing.plaf.nimbus.State;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -259,12 +260,32 @@ public class Commands {
      *** UTILITIES ***
      */
     //Distribute roles
-    static Timer distributeTimer = new Timer();
-    public static void distributeRoles(Member kingMember, Member member, Guild guild, TextChannel channel) {
-        //Cancel existing timers
-        distributeTimer.cancel(); distributeTimer.purge();
+    static Timer distributeTimer;
+    public static void distributeRoles(Member kingMember, Member member, Guild guild, TextChannel channel) throws SQLException {
+        //Vars
+        Statement statement = Main.statement;
+        String pushedId = null;
+        String guildId = guild.getId();
+        String channelId = channel.getId();
 
-        distributeTimer.schedule(new DistributeRolesTimer(kingMember, member, guild, channel), 5000);
+        //Cancel existing timers
+        if (distributeTimer != null) {
+            distributeTimer.cancel();
+            distributeTimer.purge();
+        }
+
+        //Get user ID of pushed off
+        ResultSet resultSet;
+        resultSet = statement.executeQuery(
+                "SELECT userid FROM king " +
+                        "WHERE key = 'pushed' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
+
+        if (resultSet.next()) {
+            pushedId = resultSet.getString("userid");
+        }
+
+        distributeTimer = new Timer();
+        distributeTimer.schedule(new DistributeRolesTimer(member, kingMember, pushedId, guild, channel), 5000);
     }
 
     public static void createRoles(Guild guild) {
