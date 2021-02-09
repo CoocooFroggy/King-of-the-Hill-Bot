@@ -35,6 +35,9 @@ public class DistributeRolesTimer extends TimerTask {
         List<Role> pushedRoles = guild.getRolesByName("Pushed off the Hill", false);
         Role pushedRole = pushedRoles.get(0);
 
+        //Give king role to pusher
+        guild.addRoleToMember(member, kothRole).queue();
+
         //Remove pushed role from pushed off the hill person
         if (pushedId != null) {
             Member pushedOffMember = guild.retrieveMemberById(pushedId).complete();
@@ -43,8 +46,6 @@ public class DistributeRolesTimer extends TimerTask {
         }
 
 
-        //Give king role to pusher
-        guild.addRoleToMember(member, kothRole).queue();
 
         //In case we don't need to interact with king, return
         if (kingMember == null)
