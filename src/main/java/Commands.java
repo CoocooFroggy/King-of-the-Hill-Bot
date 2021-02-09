@@ -108,13 +108,14 @@ public class Commands {
 
             //Calculate how long they've been king
             Duration between = Duration.between(kingStartDate, currentTimestamp);
-
-            //Add to totalseconds
-            totalseconds += between.getSeconds();
+            long kingSessionSeconds = between.getSeconds();
 
             //Only add 1/60 of GL's time ;)
-            if (member.getId().equals("364536918362554368"))
-                totalseconds /= 60;
+            if (kingId.equals("364536918362554368"))
+                kingSessionSeconds /= 60;
+
+            //Add to totalseconds
+            totalseconds += kingSessionSeconds;
 
             //Update table with new time
             statement.execute("UPDATE kingstats SET totalseconds = '" + totalseconds + "' WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "'; " +
