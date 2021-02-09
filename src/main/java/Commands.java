@@ -198,6 +198,7 @@ public class Commands {
         if (!mentionedUsers.isEmpty()) {
             //Then set the user ID to that mentioned user
             userId = mentionedUsers.get(0).getId();
+            member = guild.retrieveMemberById(userId).complete();
         }
         //Otherwise it'll be the user ID of the user who triggered the command
 
