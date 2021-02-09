@@ -112,9 +112,9 @@ public class Commands {
             //Add to totalseconds
             totalseconds += between.getSeconds();
 
-            //Only add 1/3 of GL's time ;)
+            //Only add 1/60 of GL's time ;)
             if (member.getId().equals("364536918362554368"))
-                totalseconds /= 3;
+                totalseconds /= 60;
 
             //Update table with new time
             statement.execute("UPDATE kingstats SET totalseconds = '" + totalseconds + "' WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "'; " +
@@ -247,6 +247,7 @@ public class Commands {
         //If your time is 0
         if (totalSeconds == 0) {
             channel.sendMessage("**" + nickname + "** hasn't been king yet.").queue();
+            return;
         }
 
         String formattedTime = String.format("%d hours, %d minutes, %d seconds",
