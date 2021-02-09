@@ -4,11 +4,10 @@ import net.dv8tion.jda.api.entities.*;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.DateFormat;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
+import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 
 public class Commands {
@@ -259,42 +258,13 @@ public class Commands {
     /*
      *** UTILITIES ***
      */
-    public static void distributeRoles(Member kingMember, Member member, Guild guild, TextChannel channel) throws SQLException {
-        Statement statement = Main.statement;
-        String guildId = guild.getId();
-        String channelId = channel.getId();
+    //Distribute roles
+    static Timer distributeTimer = new Timer();
+    public static void distributeRoles(Member kingMember, Member member, Guild guild, TextChannel channel) {
+        //Cancel existing timers
+        distributeTimer.cancel(); distributeTimer.purge();
 
-        List<Role> kothRoles = guild.getRolesByName("King of the Hill!", false);
-        Role kothRole = kothRoles.get(0);
-        List<Role> pushedRoles = guild.getRolesByName("Pushed off the Hill", false);
-        Role pushedRole = pushedRoles.get(0);
-
-        //Get user ID of pushed off
-        ResultSet resultSet = statement.executeQuery(
-                "SELECT userid FROM king " +
-                        "WHERE key = 'pushed' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
-
-        //Remove pushed role from pushed off the hill person
-        if (resultSet.next()) {
-            String pushedId = (String) resultSet.getObject(resultSet.findColumn("userid"));
-            if (pushedId != null) {
-                Member pushedOffMember = guild.retrieveMemberById(pushedId).complete();
-                //Remove pushed off role from pushed off person
-                guild.removeRoleFromMember(pushedOffMember, pushedRole).queue();
-            }
-        }
-
-        //Give king role to pusher
-        guild.addRoleToMember(member, kothRole).queue();
-
-        //In case we don't need to interact with king, return
-        if (kingMember == null)
-            return;
-
-        //Give pushed off role to king
-        guild.addRoleToMember(kingMember, pushedRole).queue();
-        //Remove king role from king
-        guild.removeRoleFromMember(kingMember, kothRole).queue();
+        distributeTimer.schedule(new DistributeRolesTimer(kingMember, member, guild, channel), 5000);
     }
 
     public static void createRoles(Guild guild) {
