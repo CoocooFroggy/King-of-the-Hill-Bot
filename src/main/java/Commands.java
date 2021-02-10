@@ -38,7 +38,7 @@ public class Commands {
                                 TimeUnit.HOURS.toMinutes(TimeUnit.SECONDS.toHours(banDuration))
                 );
 
-                channel.sendMessage("You are banned for **" + banExpireTimestamp + "** :(").queue();
+                channel.sendMessage("You are banned for **" + banDurationFormatted + "** :(").queue();
                 return;
             }
         }
@@ -82,7 +82,12 @@ public class Commands {
 
         // If nobody is mentioned
         if (mentionedUsers.isEmpty()) {
-            channel.sendMessage("Please mention a player to push!").queue();
+            //If you're the king
+            if (userId.equals(kingId)) {
+                channel.sendMessage("You're the king already!").queue();
+            } else {
+                channel.sendMessage("Please mention a player to push!").queue();
+            }
             return;
         }
 
