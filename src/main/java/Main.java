@@ -20,7 +20,7 @@ public class Main extends ListenerAdapter {
 
     public static boolean startBot() throws InterruptedException {
         JDABuilder preBuild = JDABuilder.createDefault(token);
-        preBuild.setActivity(Activity.playing("king of the hill!"));
+        preBuild.setActivity(Activity.playing("hugs of the hill!"));
         try {
             jda = preBuild.build();
         } catch (Exception e) {
@@ -82,8 +82,10 @@ public class Main extends ListenerAdapter {
 
         // Command executor
         switch (command) {
-            case "p":
-            case "push": {
+//            case "p":
+            case "h":
+//            case "push": {
+            case "hug": {
                 try {
                     Commands.pushCommand(user, member, guild, channel, mentionedUsers);
                 } catch (SQLException throwables) {
