@@ -271,8 +271,9 @@ public class Commands {
     }
 
     /*
-     *** UTILITIES ***
-     */
+    *** UTILITIES ***
+    */
+
     //Distribute roles
     static Timer distributeTimer;
     public static void distributeRoles(Member kingMember, Member member, Guild guild, TextChannel channel) throws SQLException {
