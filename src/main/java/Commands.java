@@ -125,6 +125,10 @@ public class Commands {
             //Update king's stats (person who just got pushed off, not the pusher)
             updateKingStats(guildId, channelId, kingId, kingTimestamp, currentTimestamp);
 
+            //Add one to the pusher's king count
+            statement.executeUpdate("UPDATE kingstats " +
+                    "SET totalkings = totalkings + 1");
+
             //Push off the king
             statement.executeUpdate("UPDATE king " +
                     "SET userid = '" + kingId + "' " +
@@ -202,6 +206,9 @@ public class Commands {
         String guildId = guild.getId();
         String channelId = channel.getId();
         int totalSeconds = 0;
+        int totalkings = 0;
+        int totalpushed = 0;
+
         String nickname;
 
         //if they mentioned a user
@@ -219,13 +226,15 @@ public class Commands {
         else
             nickname = member.getNickname();
 
-        ResultSet kingstatsResultSet = statement.executeQuery("SELECT totalseconds FROM kingstats " +
+        //Get stats
+        ResultSet kingstatsResultSet = statement.executeQuery("SELECT totalseconds, totalkings, totalpushed FROM kingstats " +
                 "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + userId + "'");
 
         //Get stored seconds
         if (kingstatsResultSet.next()) {
-            int totalsecondsIndex = kingstatsResultSet.findColumn("totalseconds");
-            String totalsecondsString = kingstatsResultSet.getString(totalsecondsIndex);
+            String totalsecondsString = kingstatsResultSet.getString("totalseconds");
+            totalkings = kingstatsResultSet.getInt("totalkings");
+            totalpushed = kingstatsResultSet.getInt("totalpushed");
             totalSeconds = Integer.parseInt(totalsecondsString);
         }
 
@@ -265,7 +274,8 @@ public class Commands {
         );
 
 //        channel.sendMessage("**" + nickname + "** has been king for **" + formattedTime + "**.").queue();
-        channel.sendMessage("**" + nickname + "** has been waiting for hugs for **" + formattedTime + "**.").queue();
+        channel.sendMessage("**" + nickname + "** has been waiting for hugs for **" + formattedTime + "**." +
+                "They've also given " + totalkings + " hugs and received " + totalpushed + " hugs.").queue();
     }
 
     public static void kingBanCommand(Guild guild, Member member, TextChannel channel, List<User> mentionedUsers) {
@@ -353,8 +363,8 @@ public class Commands {
             String totalsecondsString = statsResultSet.getString("totalseconds");
             totalseconds = Long.parseLong(totalsecondsString);
             //Kings
-            String totalpushedString = statsResultSet.getString("totalpushed");
-            totalpushed = Long.parseLong(totalpushedString);
+            int totalpushedInt = statsResultSet.getInt("totalpushed");
+            totalpushed = totalpushedInt;
         }
 
         //Calculate how long they've been king
