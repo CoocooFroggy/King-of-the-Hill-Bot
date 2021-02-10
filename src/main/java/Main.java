@@ -72,7 +72,7 @@ public class Main extends ListenerAdapter {
             return;
 
         if (member == null) {
-            System.out.println("Member " + user.getName() + " has null member");
+            System.out.println("Member " + user.getName() + " is null member");
             return;
         }
 
@@ -120,6 +120,11 @@ public class Main extends ListenerAdapter {
                     throwables.printStackTrace();
                 }
                 break;
+            case "kb":
+            case "kban": {
+                Commands.kingBanCommand(guild, member, channel, mentionedUsers);
+                break;
+            }
         }
     }
 }

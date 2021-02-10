@@ -19,6 +19,29 @@ public class Commands {
         String guildId = guild.getId();
         String channelId = channel.getId();
         String nickname;
+        Instant currentTimestamp = Instant.now();
+        long currentTimestampEpoch = Instant.now().toEpochMilli();
+
+        //If the user who pushed it is banned
+        ResultSet bansResultSet = statement.executeQuery("SELECT expiretimestamp FROM kingbans " +
+                "WHERE guildid = '" + guildId +"' AND channelid = '" + channelId + "' AND userid = '" + userId +"'");
+
+        //If a ban exists for the user ID
+        while (bansResultSet.next()) {
+            long banExpireTimestamp = Long.parseLong(bansResultSet.getString("expiretimestamp"));
+            //if the current date is before the timestamp
+            if (currentTimestampEpoch < banExpireTimestamp) {
+                long banDuration = banExpireTimestamp - currentTimestampEpoch;
+                String banDurationFormatted = String.format("%d hours and %d minutes",
+                        TimeUnit.SECONDS.toHours(banDuration),
+                        TimeUnit.SECONDS.toMinutes(banDuration) -
+                                TimeUnit.HOURS.toMinutes(TimeUnit.SECONDS.toHours(banDuration))
+                );
+
+                channel.sendMessage("You are banned for **" + banExpireTimestamp + "** :(").queue();
+                return;
+            }
+        }
 
         //Get personal name for user
         if (member.getNickname() == null)
@@ -40,8 +63,6 @@ public class Commands {
         int kingTimestampIndex = resultSet.findColumn("timestamp");
         String kingId = resultSet.getString(kingidIndex);
         String kingTimestamp = resultSet.getString(kingTimestampIndex);
-        Instant currentTimestamp = Instant.now();
-        long currentTimestampEpoch = Instant.now().toEpochMilli();
 
         //If there already is row for this guild and channel, just no king
         if (kingId == null) {
@@ -70,7 +91,6 @@ public class Commands {
         String pushedUserId = mentionedUsers.get(0).getId();
         User kingUser = Main.jda.retrieveUserById(kingId).complete();
         Member kingMember = guild.retrieveMember(kingUser).complete();
-        Instant kingStartDate = Instant.ofEpochMilli(Long.parseLong(kingTimestamp));
         String kingNickname;
 
         //If you mention yourself
@@ -93,36 +113,8 @@ public class Commands {
             //Distribute roles
             distributeRoles(kingMember, member, guild, channel);
 
-            //Get king's totalseconds
-            ResultSet statsResultSet = statement.executeQuery("SELECT totalseconds FROM kingstats " +
-                    "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "'");
-
-            //Time vars
-            long totalseconds = 0;
-
-            //If they already have stats, add time
-            if (statsResultSet.next()) {
-                String totalsecondsString = statsResultSet.getString("totalseconds");
-                totalseconds = Long.parseLong(totalsecondsString);
-            }
-
-            //Calculate how long they've been king
-            Duration between = Duration.between(kingStartDate, currentTimestamp);
-            long kingSessionSeconds = between.getSeconds();
-
-            //Only add 1/60 of GL's time ;)
-            if (kingId.equals("364536918362554368"))
-                kingSessionSeconds /= 60;
-
-            //Add to totalseconds
-            totalseconds += kingSessionSeconds;
-
-            //Update table with new time
-            statement.execute("UPDATE kingstats SET totalseconds = '" + totalseconds + "' WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "'; " +
-                    "INSERT INTO kingstats (guildid, channelid, userid, totalseconds) " +
-                    "SELECT '" + guildId + "', '" + channelId + "', '" + kingId + "', '" + totalseconds + "' " +
-                    "WHERE NOT EXISTS (SELECT 1 FROM kingstats WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "');"
-            );
+            //Update king's stats (person who just got pushed off, not the pusher)
+            updateKingStats(guildId, channelId, kingId, kingTimestamp, currentTimestamp);
 
             //Push off the king
             statement.executeUpdate("UPDATE king " +
@@ -262,6 +254,17 @@ public class Commands {
         channel.sendMessage("**" + nickname + "** has been king for **" + formattedTime + "**.").queue();
     }
 
+    public static void kingBanCommand(Guild guild, Member member, TextChannel channel, List<User> mentionedUsers) {
+        //Vars
+        Statement statement = Main.statement;
+        String guildId = guild.getId();
+        String channelId = channel.getId();
+
+        //If they don't have manage server perms, ignore them
+        if (!member.hasPermission(Permission.MANAGE_SERVER))
+            return;
+    }
+
     /*
      *** UTILITIES ***
      */
@@ -311,5 +314,46 @@ public class Commands {
                     .setPermissions()
                     .queue();
         }
+    }
+
+    public static void updateKingStats(String guildId, String channelId, String kingId, String kingTimestamp, Instant currentTimestamp) throws SQLException {
+        //Vars
+        Statement statement = Main.statement;
+        Instant kingStartDate = Instant.ofEpochMilli(Long.parseLong(kingTimestamp));
+
+        //Get king's totalseconds and totalpushed
+        ResultSet statsResultSet = statement.executeQuery("SELECT totalseconds, totalpushed FROM kingstats " +
+                "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "'");
+
+        //Stats vars
+        long totalseconds = 0;
+        long totalpushed = 0;
+
+        //If they already have stats, add time
+        if (statsResultSet.next()) {
+            //Time
+            String totalsecondsString = statsResultSet.getString("totalseconds");
+            totalseconds = Long.parseLong(totalsecondsString);
+            //Kings
+            String totalpushedString = statsResultSet.getString("totalpushed");
+            totalpushed = Long.parseLong(totalpushedString);
+        }
+
+        //Calculate how long they've been king
+        Duration between = Duration.between(kingStartDate, currentTimestamp);
+        long kingSessionSeconds = between.getSeconds();
+
+        //Add to totalseconds
+        totalseconds += kingSessionSeconds;
+
+        //Add to totalkings
+        totalpushed++;
+
+        //Update table with new stats
+        statement.execute("UPDATE kingstats SET totalseconds = '" + totalseconds + "', totalkings = '" + totalpushed + "' WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "'; " +
+                "INSERT INTO kingstats (guildid, channelid, userid, totalseconds, totalkings) " +
+                "SELECT '" + guildId + "', '" + channelId + "', '" + kingId + "', '" + totalseconds + "', '" + totalpushed + "' " +
+                "WHERE NOT EXISTS (SELECT 1 FROM kingstats WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "');"
+        );
     }
 }
