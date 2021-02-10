@@ -314,18 +314,21 @@ public class Commands {
 
     public static void createRoles(Guild guild) {
         //Check if roles already exist
-        List<Role> kothRole = guild.getRolesByName("King of the Hill!", false);
-        List<Role> pushedRole = guild.getRolesByName("Pushed off the Hill", false);
+//      List<Role> kothRoles = guild.getRolesByName("King of the Hill!", false);
+        List<Role> kothRoles = guild.getRolesByName("Hugged someone!", false);
+//      List<Role> pushedRoles = guild.getRolesByName("Pushed off the Hill", false);
+        List<Role> pushedRoles = guild.getRolesByName("Received a hug", false);
+
         //Make it if it doesn't
-        if (kothRole.isEmpty()) {
+        if (kothRoles.isEmpty()) {
             guild.createRole()
-                    .setName("King of the Hill!")
+                    .setName("Hugged someone!")
                     .setPermissions()
                     .queue();
         }
-        if (pushedRole.isEmpty()) {
+        if (pushedRoles.isEmpty()) {
             guild.createRole()
-                    .setName("Pushed off the Hill")
+                    .setName("Received a hug")
                     .setPermissions()
                     .queue();
         }

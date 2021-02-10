@@ -30,9 +30,11 @@ public class DistributeRolesTimer extends TimerTask {
         String guildId = guild.getId();
         String channelId = channel.getId();
 
-        List<Role> kothRoles = guild.getRolesByName("King of the Hill!", false);
+//        List<Role> kothRoles = guild.getRolesByName("King of the Hill!", false);
+        List<Role> kothRoles = guild.getRolesByName("Hugged someone!", false);
         Role kothRole = kothRoles.get(0);
-        List<Role> pushedRoles = guild.getRolesByName("Pushed off the Hill", false);
+//        List<Role> pushedRoles = guild.getRolesByName("Pushed off the Hill", false);
+        List<Role> pushedRoles = guild.getRolesByName("Received a hug", false);
         Role pushedRole = pushedRoles.get(0);
 
         //Give king role to pusher

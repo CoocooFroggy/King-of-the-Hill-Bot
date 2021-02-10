@@ -34,7 +34,7 @@ public class Main extends ListenerAdapter {
 
     public static void main(String[] args) {
         token = System.getenv("KOTH_BOT_TOKEN");
-        prefix = "-";
+        prefix = "`";
 
         String url = System.getenv("KOTH_BOT_SQL_URL");
         try {
