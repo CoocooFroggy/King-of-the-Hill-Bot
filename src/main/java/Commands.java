@@ -127,7 +127,8 @@ public class Commands {
 
             //Add one to the pusher's king count
             statement.executeUpdate("UPDATE kingstats " +
-                    "SET totalkings = totalkings + 1");
+                    "SET totalkings = totalkings + 1 " +
+                    "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId +"' AND userid = '" + userId + "' ");
 
             //Push off the king
             statement.executeUpdate("UPDATE king " +
@@ -363,8 +364,7 @@ public class Commands {
             String totalsecondsString = statsResultSet.getString("totalseconds");
             totalseconds = Long.parseLong(totalsecondsString);
             //Kings
-            int totalpushedInt = statsResultSet.getInt("totalpushed");
-            totalpushed = totalpushedInt;
+            totalpushed = statsResultSet.getInt("totalpushed");
         }
 
         //Calculate how long they've been king
@@ -374,12 +374,12 @@ public class Commands {
         //Add to totalseconds
         totalseconds += kingSessionSeconds;
 
-        //Add to totalkings
+        //Add to totalpushed
         totalpushed++;
 
         //Update table with new stats
-        statement.execute("UPDATE kingstats SET totalseconds = '" + totalseconds + "', totalkings = '" + totalpushed + "' WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "'; " +
-                "INSERT INTO kingstats (guildid, channelid, userid, totalseconds, totalkings) " +
+        statement.execute("UPDATE kingstats SET totalseconds = '" + totalseconds + "', totalpushed = '" + totalpushed + "' WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "'; " +
+                "INSERT INTO kingstats (guildid, channelid, userid, totalseconds, totalpushed) " +
                 "SELECT '" + guildId + "', '" + channelId + "', '" + kingId + "', '" + totalseconds + "', '" + totalpushed + "' " +
                 "WHERE NOT EXISTS (SELECT 1 FROM kingstats WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + kingId + "');"
         );
