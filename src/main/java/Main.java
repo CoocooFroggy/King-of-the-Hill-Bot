@@ -20,7 +20,7 @@ public class Main extends ListenerAdapter {
 
     public static boolean startBot() throws InterruptedException {
         JDABuilder preBuild = JDABuilder.createDefault(token);
-        preBuild.setActivity(Activity.playing("hugs of the hill!"));
+        preBuild.setActivity(Activity.playing("king of the hill!"));
         try {
             jda = preBuild.build();
         } catch (Exception e) {

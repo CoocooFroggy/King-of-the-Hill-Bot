@@ -76,8 +76,7 @@ public class Commands {
             //Distribute roles
             distributeRoles(null, member, guild, channel);
 
-//            channel.sendMessage("**" + nickname + "** is now king of the hill!").queue();
-            channel.sendMessage("**" + nickname + "** needs a hug!").queue();
+            channel.sendMessage("**" + nickname + "** is now king of the hill!").queue();
             return;
         }
 
@@ -85,11 +84,9 @@ public class Commands {
         if (mentionedUsers.isEmpty()) {
             //If you're the king
             if (userId.equals(kingId)) {
-//                channel.sendMessage("You're the king already!").queue();
-                channel.sendMessage("You're waiting for a hug already!").queue();
+                channel.sendMessage("You're the king already!").queue();
             } else {
-//                channel.sendMessage("Please mention a player to push!").queue();
-                channel.sendMessage("Please mention a player to hug!").queue();
+                channel.sendMessage("Please mention a player to push!").queue();
             }
             return;
         }
@@ -103,8 +100,7 @@ public class Commands {
 
         //If you mention yourself
         if (pushedUserId.equals(userId)) {
-//            channel.sendMessage("You can't push yourself off, silly!").queue();
-            channel.sendMessage("You can't hug yourself, silly!").queue();
+            channel.sendMessage("You can't push yourself off, silly!").queue();
             return;
         }
 
@@ -141,13 +137,11 @@ public class Commands {
                     "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
 
-//            channel.sendMessage("**" + nickname + "** pushed **" + kingNickname + "** off the hill!").queue();
-            channel.sendMessage("**" + nickname + "** gave **" + kingNickname + "** a hug!").queue();
+            channel.sendMessage("**" + nickname + "** pushed **" + kingNickname + "** off the hill!").queue();
         }
         //Else if they didn't push the king off the hill
         else {
-//            channel.sendMessage("Please push **" + kingNickname + "** off the hill!").queue();
-            channel.sendMessage("**" + kingNickname + "** is waiting for a hug!").queue();
+            channel.sendMessage("Please push **" + kingNickname + "** off the hill!").queue();
         }
     }
 
@@ -179,8 +173,7 @@ public class Commands {
                 "('king', '" + guildId + "', '" + channelId + "')");
         statement.execute("INSERT INTO king (key, guildid, channelid) VALUES " +
                 "('pushed', '" + guildId + "', '" + channelId + "')");
-//        channel.sendMessage("Hill created! Do `-push` to start!").queue();
-        channel.sendMessage("Hug hill created! Do `-hug` to start!").queue();
+        channel.sendMessage("Hill created! Do `-push` to start!").queue();
     }
 
     public static void removeCommand(Guild guild, Member member, TextChannel channel) throws SQLException {
@@ -196,8 +189,7 @@ public class Commands {
 
         statement.execute("DELETE FROM king WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
-//        channel.sendMessage("Removed hill from this channel.").queue();
-        channel.sendMessage("Removed hug hill from this channel.").queue();
+        channel.sendMessage("Removed hill from this channel.").queue();
     }
 
     public static void statsCommand(Guild guild, Member member, TextChannel channel, List<User> mentionedUsers) throws SQLException {
@@ -274,9 +266,8 @@ public class Commands {
                         TimeUnit.MINUTES.toSeconds(TimeUnit.SECONDS.toMinutes(totalSeconds))
         );
 
-//        channel.sendMessage("**" + nickname + "** has been king for **" + formattedTime + "**.").queue();
-        channel.sendMessage("**" + nickname + "** has been waiting for hugs for **" + formattedTime + "**." +
-                "They've also given " + totalkings + " hugs and received " + totalpushed + " hugs.").queue();
+        channel.sendMessage("**" + nickname + "** has been king for **" + formattedTime + "**.\n" +
+                "They've also been king " + totalkings + " times and has been pushed off " + totalpushed + " times.").queue();
     }
 
     public static void kingBanCommand(Guild guild, Member member, TextChannel channel, List<User> mentionedUsers) {
@@ -325,21 +316,19 @@ public class Commands {
 
     public static void createRoles(Guild guild) {
         //Check if roles already exist
-//      List<Role> kothRoles = guild.getRolesByName("King of the Hill!", false);
-        List<Role> kothRoles = guild.getRolesByName("Hugged someone!", false);
-//      List<Role> pushedRoles = guild.getRolesByName("Pushed off the Hill", false);
-        List<Role> pushedRoles = guild.getRolesByName("Received a hug", false);
+       List<Role> kothRoles = guild.getRolesByName("King of the Hill!", false);
+       List<Role> pushedRoles = guild.getRolesByName("Pushed off the Hill", false);
 
         //Make it if it doesn't
         if (kothRoles.isEmpty()) {
             guild.createRole()
-                    .setName("Hugged someone!")
+                    .setName("King of the Hill!")
                     .setPermissions()
                     .queue();
         }
         if (pushedRoles.isEmpty()) {
             guild.createRole()
-                    .setName("Received a hug")
+                    .setName("Pushed off the Hill")
                     .setPermissions()
                     .queue();
         }
