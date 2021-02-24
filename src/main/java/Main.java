@@ -82,10 +82,8 @@ public class Main extends ListenerAdapter {
 
         // Command executor
         switch (command) {
-//            case "p":
-            case "h":
-//            case "push": {
-            case "hug": {
+            case "p":
+            case "push": {
                 try {
                     Commands.pushCommand(user, member, guild, channel, mentionedUsers);
                 } catch (SQLException throwables) {
