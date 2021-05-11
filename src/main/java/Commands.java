@@ -24,7 +24,7 @@ public class Commands {
 
         //Fetch all bans
         ResultSet bansResultSet = statement.executeQuery("SELECT expiretimestamp FROM kingbans " +
-                "WHERE guildid = '" + guildId +"' AND channelid = '" + channelId + "' AND userid = '" + userId +"'");
+                "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + userId + "'");
 
         //If a ban exists for the user ID
         while (bansResultSet.next()) {
@@ -124,7 +124,7 @@ public class Commands {
             //Add one to the pusher's king count
             statement.executeUpdate("UPDATE kingstats " +
                     "SET totalkings = totalkings + 1 " +
-                    "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId +"' AND userid = '" + userId + "' ");
+                    "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + userId + "' ");
 
             //Push off the king
             statement.executeUpdate("UPDATE king " +
@@ -173,7 +173,7 @@ public class Commands {
                 "('king', '" + guildId + "', '" + channelId + "')");
         statement.execute("INSERT INTO king (key, guildid, channelid) VALUES " +
                 "('pushed', '" + guildId + "', '" + channelId + "')");
-        channel.sendMessage("Hill created! Do `-push` to start!").queue();
+        channel.sendMessage("Hill created! Do ``push` to start!").queue();
     }
 
     public static void removeCommand(Guild guild, Member member, TextChannel channel) throws SQLException {
@@ -282,12 +282,17 @@ public class Commands {
     }
 
     /*
-    *** UTILITIES ***
-    */
+     *** UTILITIES ***
+     */
 
     //Distribute roles
     static Timer distributeTimer;
+
     public static void distributeRoles(Member kingMember, Member member, Guild guild, TextChannel channel) throws SQLException {
+        //If we don't have perms to distribute roles, do nothing
+        if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES))
+            return;
+
         //Vars
         Statement statement = Main.statement;
         String pushedId = null;
@@ -315,9 +320,13 @@ public class Commands {
     }
 
     public static void createRoles(Guild guild) {
+        //If we don't have manage role perms, just don't do anything
+        if (!guild.getSelfMember().hasPermission(Permission.MANAGE_ROLES))
+            return;
+
         //Check if roles already exist
-       List<Role> kothRoles = guild.getRolesByName("King of the Hill!", false);
-       List<Role> pushedRoles = guild.getRolesByName("Pushed off the Hill", false);
+        List<Role> kothRoles = guild.getRolesByName("King of the Hill!", false);
+        List<Role> pushedRoles = guild.getRolesByName("Pushed off the Hill", false);
 
         //Make it if it doesn't
         if (kothRoles.isEmpty()) {
