@@ -1,12 +1,15 @@
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.*;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.*;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Main extends ListenerAdapter {
 
@@ -19,10 +22,10 @@ public class Main extends ListenerAdapter {
     static Statement statement;
 
     public static boolean startBot() throws InterruptedException {
-        JDABuilder preBuild = JDABuilder.createDefault(token);
-        preBuild.setActivity(Activity.playing("king of the hill!"));
+        JDABuilder jdaBuilder = JDABuilder.createDefault(token);
+        jdaBuilder.setActivity(Activity.playing("king of the hill!"));
         try {
-            jda = preBuild.build();
+            jda = jdaBuilder.build();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -49,80 +52,123 @@ public class Main extends ListenerAdapter {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        registerSlashCommands();
+    }
+
+    public static void registerSlashCommands() {
+//        Guild debugGuild = jda.getGuildById("685606700929384489");
+//        assert debugGuild != null;
+
+        jda.
+                upsertCommand("create", "Creates a Hill in the current channel.")
+                .queue();
+        jda.
+                upsertCommand("remove", "Removes the Hill in the current channel.")
+                .queue();
+        jda.
+                upsertCommand("push", "Pushes a King off the Hill!")
+                .addOption(OptionType.USER, "king", "Current King of the Hill", false)
+                .queue();
+        jda.
+                upsertCommand("stats", "Checks stats of yourself or a player.")
+                .addOption(OptionType.USER, "player", "Player to check stats of", false)
+                .queue();
     }
 
     @Override
-    public void onGuildMessageReceived(@NotNull GuildMessageReceivedEvent event) {
-        //Vars
-        User user = event.getAuthor();
-
-        //Ignore bots
-        if (user.isBot())
-            return;
-
-        //Vars ctd.
-        Message message = event.getMessage();
-        String messageRaw = message.getContentRaw();
+    public void onSlashCommand(@NotNull SlashCommandEvent event) {
+    //Vars
+        User user = event.getUser();
         Member member = event.getMember();
         Guild guild = event.getGuild();
-        TextChannel channel = event.getChannel();
-        List<User> mentionedUsers = message.getMentionedUsers();
+        MessageChannel messageChannel = event.getChannel();
 
-        if (!messageRaw.startsWith(prefix))
+        if (messageChannel instanceof PrivateChannel) {
+            event.reply("King of the Hill can only be played in a server!").queue();
             return;
+        }
+        TextChannel channel = event.getTextChannel();
 
         if (member == null) {
             System.out.println("Member " + user.getName() + " is null member");
             return;
         }
 
-        String messageNoPrefix = messageRaw.substring(prefix.length());
-
-        String command = messageNoPrefix.split("\\s")[0].toLowerCase();
-
         // Command executor
-        switch (command) {
-            case "p":
+        switch (event.getName()) {
             case "push": {
                 try {
-                    Commands.pushCommand(user, member, guild, channel, mentionedUsers);
+                    String reply = Commands.pushCommand(user, member, guild, channel, event.getOption("king"));
+                    boolean ephemeral = false;
+                    if (reply.startsWith("EPHEMERAL:")) {
+                        reply = reply.replace("EPHEMERAL:", "");
+                        ephemeral = true;
+                    }
+                    event.reply(reply).setEphemeral(ephemeral).queue();
+                } catch (SQLException throwables) {
+                    event.reply("Database error :(").queue();
+                    throwables.printStackTrace();
+                }
+                break;
+            }
+
+            case "create": {
+                try {
+                    String reply = Commands.createCommand(guild, member, channel);
+                    boolean ephemeral = false;
+                    if (reply.startsWith("EPHEMERAL:")) {
+                        reply = reply.replace("EPHEMERAL:", "");
+                        ephemeral = true;
+                    }
+                    event.reply(reply).setEphemeral(ephemeral).queue();
                 } catch (SQLException throwables) {
                     channel.sendMessage("Database error :(").queue();
                     throwables.printStackTrace();
                 }
                 break;
             }
-            case "c":
-            case "create":
+
+            case "remove": {
                 try {
-                    Commands.createCommand(guild, member, channel);
+                    String reply = Commands.removeCommand(guild, member, channel);
+                    boolean ephemeral = false;
+                    if (reply.startsWith("EPHEMERAL:")) {
+                        reply = reply.replace("EPHEMERAL:", "");
+                        ephemeral = true;
+                    }
+                    event.reply(reply).setEphemeral(ephemeral).queue();
                 } catch (SQLException throwables) {
                     channel.sendMessage("Database error :(").queue();
                     throwables.printStackTrace();
                 }
                 break;
-            case "r":
-            case "reset":
-            case "remove":
+            }
+
+            case "stats": {
                 try {
-                    Commands.removeCommand(guild, member, channel);
+                    String reply = Commands.statsCommand(guild, member, channel, event.getOption("player"));
+                    boolean ephemeral = false;
+                    if (reply.startsWith("EPHEMERAL:")) {
+                        reply = reply.replace("EPHEMERAL:", "");
+                        ephemeral = true;
+                    }
+                    event.reply(reply).setEphemeral(ephemeral).queue();
                 } catch (SQLException throwables) {
                     channel.sendMessage("Database error :(").queue();
                     throwables.printStackTrace();
                 }
                 break;
-            case "s":
-            case "stats":
-                try {
-                    Commands.statsCommand(guild, member, channel, mentionedUsers);
-                } catch (SQLException throwables) {
-                    channel.sendMessage("Database error :(").queue();
-                    throwables.printStackTrace();
-                }
-                break;
-            case "kb":
+            }
+
             case "kban": {
-                Commands.kingBanCommand(guild, member, channel, mentionedUsers);
+                String reply = Commands.kingBanCommand(guild, member, channel, event.getOption("player"));
+                boolean ephemeral = false;
+                if (reply.startsWith("EPHEMERAL:")) {
+                    reply = reply.replace("EPHEMERAL:", "");
+                    ephemeral = true;
+                }
+                event.reply(reply).setEphemeral(ephemeral).queue();
                 break;
             }
         }

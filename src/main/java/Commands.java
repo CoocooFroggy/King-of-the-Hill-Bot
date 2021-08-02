@@ -1,7 +1,7 @@
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 
-import javax.swing.plaf.nimbus.State;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -12,7 +12,7 @@ import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 
 public class Commands {
-    public static void pushCommand(User user, Member member, Guild guild, TextChannel channel, List<User> mentionedUsers) throws SQLException {
+    public static String pushCommand(User user, Member member, Guild guild, TextChannel channel, OptionMapping userToPush) throws SQLException {
         //Vars
         Statement statement = Main.statement;
         String userId = user.getId();
@@ -38,8 +38,7 @@ public class Commands {
                                 TimeUnit.HOURS.toMinutes(TimeUnit.SECONDS.toHours(banDuration))
                 );
 
-                channel.sendMessage("You are banned for **" + banDurationFormatted + "** :(").queue();
-                return;
+                return ("You are banned for **" + banDurationFormatted + "** :(");
             }
         }
 
@@ -56,7 +55,7 @@ public class Commands {
 
         //If there's no hill in this channel + guild
         if (!resultSet.next())
-            return;
+            return "EPHEMERAL:There's no Hill in the current channel. Use `/create` to create one!";
 
         //King vars part 1
         int kingidIndex = resultSet.findColumn("userid");
@@ -76,32 +75,29 @@ public class Commands {
             //Distribute roles
             distributeRoles(null, member, guild, channel);
 
-            channel.sendMessage("**" + nickname + "** is now king of the hill!").queue();
-            return;
+            return ("**" + nickname + "** is now king of the hill!");
         }
 
         // If nobody is mentioned
-        if (mentionedUsers.isEmpty()) {
+        if (userToPush == null) {
             //If you're the king
             if (userId.equals(kingId)) {
-                channel.sendMessage("You're the king already!").queue();
+                return ("You're the king already!");
             } else {
-                channel.sendMessage("Please mention a player to push!").queue();
+                return ("Please mention a player to push!");
             }
-            return;
         }
 
 
         //King vars P2
-        String pushedUserId = mentionedUsers.get(0).getId();
+        String pushedUserId = userToPush.getAsUser().getId();
         User kingUser = Main.jda.retrieveUserById(kingId).complete();
         Member kingMember = guild.retrieveMember(kingUser).complete();
         String kingNickname;
 
         //If you mention yourself
         if (pushedUserId.equals(userId)) {
-            channel.sendMessage("You can't push yourself off, silly!").queue();
-            return;
+            return ("You can't push yourself off, silly!");
         }
 
         //Get personal name for king
@@ -121,10 +117,22 @@ public class Commands {
             //Update king's stats (person who just got pushed off, not the pusher)
             updateKingStats(guildId, channelId, kingId, kingTimestamp, currentTimestamp);
 
-            //Add one to the pusher's king count
+            // Get totalkings
+            ResultSet totalKingsResultSet = statement.executeQuery("SELECT totalkings FROM kingstats " +
+                    "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + userId + "'");
+
+            int totalkings = 0;
+            // If they already have a value
+            if (totalKingsResultSet.next()) {
+                 totalkings = totalKingsResultSet.getInt("totalkings");
+            }
+            // Increment totalkings
+            totalkings++;
+
+            // Put it back
             statement.executeUpdate("UPDATE kingstats " +
-                    "SET totalkings = totalkings + 1 " +
-                    "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + userId + "' ");
+                    "SET totalkings = " + totalkings + " " +
+                    "WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "' AND userid = '" + userId + "'");
 
             //Push off the king
             statement.executeUpdate("UPDATE king " +
@@ -137,23 +145,23 @@ public class Commands {
                     "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
 
-            channel.sendMessage("**" + nickname + "** pushed **" + kingNickname + "** off the hill!").queue();
+            return ("**" + nickname + "** pushed **" + kingNickname + "** off the hill!");
         }
         //Else if they didn't push the king off the hill
         else {
-            channel.sendMessage("Please push **" + kingNickname + "** off the hill!").queue();
+            return ("Please push **" + kingNickname + "** off the hill!");
         }
     }
 
-    public static void createCommand(Guild guild, Member member, TextChannel channel) throws SQLException {
+    public static String createCommand(Guild guild, Member member, TextChannel channel) throws SQLException {
         //Vars
         Statement statement = Main.statement;
         String guildId = guild.getId();
         String channelId = channel.getId();
 
         //If they don't have manage server perms, ignore them
-        if (!member.hasPermission(Permission.MANAGE_SERVER))
-            return;
+        if (!member.hasPermission(Permission.MANAGE_CHANNEL))
+            return "EPHEMERAL:You need Manage Channel permissions to create a Hill.";
 
         //See if hill exists here
         ResultSet resultSet = statement.executeQuery(
@@ -162,8 +170,7 @@ public class Commands {
 
         //Check if hill already exists here
         if (resultSet.next()) {
-            channel.sendMessage("Cannot create a hill here, hill already exists!").queue();
-            return;
+            return ("EPHEMERAL:Cannot create a hill here, hill already exists!");
         }
 
         createRoles(guild);
@@ -173,10 +180,10 @@ public class Commands {
                 "('king', '" + guildId + "', '" + channelId + "')");
         statement.execute("INSERT INTO king (key, guildid, channelid) VALUES " +
                 "('pushed', '" + guildId + "', '" + channelId + "')");
-        channel.sendMessage("Hill created! Do ``push` to start!").queue();
+        return ("Hill created! Do `/push` to start!");
     }
 
-    public static void removeCommand(Guild guild, Member member, TextChannel channel) throws SQLException {
+    public static String removeCommand(Guild guild, Member member, TextChannel channel) throws SQLException {
         //DELETE FROM king WHERE channelid = '685618172975513625';
         //Vars
         Statement statement = Main.statement;
@@ -184,15 +191,15 @@ public class Commands {
         String channelId = channel.getId();
 
         //If they don't have manage server perms, ignore them
-        if (!member.hasPermission(Permission.MANAGE_SERVER))
-            return;
+        if (!member.hasPermission(Permission.MANAGE_CHANNEL))
+            return "EPHEMERAL:You need Manage Channel permissions to remove a Hill.";
 
         statement.execute("DELETE FROM king WHERE guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
-        channel.sendMessage("Removed hill from this channel.").queue();
+        return ("Removed hill from this channel.");
     }
 
-    public static void statsCommand(Guild guild, Member member, TextChannel channel, List<User> mentionedUsers) throws SQLException {
+    public static String statsCommand(Guild guild, Member member, TextChannel channel, OptionMapping user) throws SQLException {
         //Vars
         Statement statement = Main.statement;
         String userId = member.getId();
@@ -205,9 +212,9 @@ public class Commands {
         String nickname;
 
         //if they mentioned a user
-        if (!mentionedUsers.isEmpty()) {
+        if (user != null) {
             //Then set the user ID to that mentioned user
-            userId = mentionedUsers.get(0).getId();
+            userId = user.getAsUser().getId();
             member = guild.retrieveMemberById(userId).complete();
         }
         //Otherwise it'll be the user ID of the user who triggered the command
@@ -237,7 +244,7 @@ public class Commands {
 
         //If there's no hill in this channel
         if (!kingResultSet.next())
-            return;
+            return "EPHEMERAL:There's no hill in this channel!";
 
         //Add current session's seconds if you're king
         int kingIdIndex = kingResultSet.findColumn("userid");
@@ -254,8 +261,7 @@ public class Commands {
 
         //If your time is 0
         if (totalSeconds == 0) {
-            channel.sendMessage("**" + nickname + "** hasn't been king yet.").queue();
-            return;
+            return ("**" + nickname + "** hasn't been king yet.");
         }
 
         String formattedTime = String.format("%d hours, %d minutes, %d seconds",
@@ -266,24 +272,24 @@ public class Commands {
                         TimeUnit.MINUTES.toSeconds(TimeUnit.SECONDS.toMinutes(totalSeconds))
         );
 
-        channel.sendMessage("**" + nickname + "** has been king for **" + formattedTime + "**.\n" +
-                "They've also been king " + totalkings + " times and has been pushed off " + totalpushed + " times.").queue();
+        return ("**" + nickname + "** has been king for **" + formattedTime + "**.\n" +
+                "They've also been king " + totalkings + " times and has been pushed off " + totalpushed + " times.");
     }
 
-    public static void kingBanCommand(Guild guild, Member member, TextChannel channel, List<User> mentionedUsers) {
+    public static String kingBanCommand(Guild guild, Member member, TextChannel channel, OptionMapping userToBan) {
         //Vars
         Statement statement = Main.statement;
         String guildId = guild.getId();
         String channelId = channel.getId();
 
         //If they don't have manage server perms, ignore them
-        if (!member.hasPermission(Permission.MANAGE_SERVER))
-            return;
+        if (!member.hasPermission(Permission.MANAGE_CHANNEL))
+            return "EPHEMERAL:You need Manage Channel permissions to ban a player from this Hill.";
+
+        return "EPHEMERAL:Not implemented yet!";
     }
 
-    /*
-     *** UTILITIES ***
-     */
+    /*  UTILITIES   */
 
     //Distribute roles
     static Timer distributeTimer;
