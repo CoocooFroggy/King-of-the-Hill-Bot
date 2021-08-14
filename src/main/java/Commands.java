@@ -50,22 +50,22 @@ public class Commands {
         else
             nickname = member.getNickname();
 
-        //Get user ID of king
+        // Get user ID of king
         ResultSet resultSet = statement.executeQuery(
                 "SELECT userid, timestamp FROM king " +
                         "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
-        //If there's no hill in this channel + guild
+        // If there's no hill in this channel + guild
         if (!resultSet.next())
             return "EPHEMERAL:There's no Hill in the current channel. Use `/create` to create one!";
 
-        //King vars part 1
+        // King vars part 1
         int kingidIndex = resultSet.findColumn("userid");
         int kingTimestampIndex = resultSet.findColumn("timestamp");
         String kingId = resultSet.getString(kingidIndex);
         String kingTimestamp = resultSet.getString(kingTimestampIndex);
 
-        //If there already is row for this guild and channel, just no king
+        // If there already is row for this guild and channel, just no king
         if (kingId == null) {
             statement.execute("UPDATE king " +
                     "SET userid = '" + userId + "', timestamp = '" + currentTimestampEpoch + "' " +
