@@ -26,10 +26,6 @@ public class DistributeRolesTimer extends TimerTask {
 
     @Override
     public void run() {
-        Statement statement = Main.statement;
-        String guildId = guild.getId();
-        String channelId = channel.getId();
-
         List<Role> kothRoles = guild.getRolesByName("King of the Hill!", false);
         Role kothRole = kothRoles.get(0);
         List<Role> pushedRoles = guild.getRolesByName("Pushed off the Hill", false);
@@ -44,8 +40,6 @@ public class DistributeRolesTimer extends TimerTask {
             //Remove pushed off role from pushed off person
             guild.removeRoleFromMember(pushedOffMember, pushedRole).queue();
         }
-
-
 
         //In case we don't need to interact with king, return
         if (kingMember == null)

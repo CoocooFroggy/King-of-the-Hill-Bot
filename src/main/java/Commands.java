@@ -1,6 +1,8 @@
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.requests.ErrorResponse;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -92,21 +94,32 @@ public class Commands {
         //King vars P2
         String pushedUserId = userToPush.getAsUser().getId();
         User kingUser = Main.jda.retrieveUserById(kingId).complete();
-        Member kingMember = guild.retrieveMember(kingUser).complete();
-        String kingNickname;
+        // Member of the person pushed off
+        Member kingMember = null;
+        // What to call the person who was pushed off
+        String kingName;
+        // Temp variable for their literal server nickname
+        String kingNick = null;
+        try {
+            kingMember = guild.retrieveMember(kingUser).complete();
+            kingNick = kingMember.getNickname();
+        }
+        // We just catch because it's ok if kingMember is null. No action necessary
+        catch (ErrorResponseException ignored) {
+        }
 
-        //If you mention yourself
+        // If you mention yourself
         if (pushedUserId.equals(userId)) {
             return ("You can't push yourself off, silly!");
         }
 
-        //Get personal name for king
-        if (kingMember.getNickname() == null)
-            kingNickname = kingUser.getName();
+        // Get personal name for king
+        if (kingNick == null)
+            kingName = kingUser.getName();
         else
-            kingNickname = kingMember.getNickname();
+            kingName = kingNick;
 
-        //Otherwise check if they pushed the king off
+        // Otherwise, check if they pushed the king off
         if (pushedUserId.equals(kingId)) {
             //Create roles if they don't exist
             createRoles(guild);
@@ -145,11 +158,11 @@ public class Commands {
                     "WHERE key = 'king' AND guildid = '" + guildId + "' AND channelid = '" + channelId + "'");
 
 
-            return ("**" + nickname + "** pushed **" + kingNickname + "** off the hill!");
+            return ("**" + nickname + "** pushed **" + kingName + "** off the hill!");
         }
         //Else if they didn't push the king off the hill
         else {
-            return ("Please push **" + kingNickname + "** off the hill!");
+            return ("Please push **" + kingName + "** off the hill!");
         }
     }
 
